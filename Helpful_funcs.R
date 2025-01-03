@@ -761,14 +761,6 @@ indirect.mlm.summary <- function( boot.object ) {
   })
 }
 
-
-#######
-
-library(glue)
-
-dat_table1 %>% 
-  mutate(`Mean Age (SD) in Years` = glue("{`Age (Years)`} ({`Age SD (Years)`})"),
-         .keep = 'none')
 ################################################################################
 
 make_vgq_col_names_better_latl_adj <- function(raw.df) {
