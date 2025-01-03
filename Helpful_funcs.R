@@ -794,7 +794,7 @@ make_vgq_col_names_better_latl_adj <- function(raw.df) {
 
 ############################################################################
 
-get_vgq_scores_latl_adj <- function(raw.df) {
+get_vgq_scores_latl_adj <- function(raw.df,  raw_values_qualtrics = T) {
   # Input :
   # Data frame with at least one column named "participant_id" with the unique
   # IDs for each participant and the columns from the VGQ with the names
@@ -813,6 +813,11 @@ get_vgq_scores_latl_adj <- function(raw.df) {
   
   vgp_categories.df <- raw.df %>%
     select(participant_id, contains("past.year"))
+  
+  if(raw_values_qualtrics) {
+    vgp_categories.df <- vgp_categories.df %>%
+      mutate(across(contains("year_hours"), function(x) {as.numeric(x) - 1 }))
+  }
   
   vgp_categories.df <- vgp_categories.df %>%
     mutate(
