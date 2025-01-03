@@ -814,11 +814,6 @@ get_vgq_scores_latl_adj <- function(raw.df) {
   vgp_categories.df <- raw.df %>%
     select(participant_id, contains("past.year"))
   
-  if(raw_values_qualtrics) {
-    vgp_categories.df <- vgp_categories.df %>%
-      mutate(across(contains("year_hours"), function(x) {as.numeric(x) - 1 }))
-  }
-  
   vgp_categories.df <- vgp_categories.df %>%
     mutate(
       all.genre_past.year_hours =
