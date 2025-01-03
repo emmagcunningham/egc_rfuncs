@@ -794,7 +794,7 @@ make_vgq_col_names_better_latl_adj <- function(raw.df) {
 
 ############################################################################
 
-get_vgq_scores_latl_adj <- function(raw.df, raw_values_qualtrics = TRUE) {
+get_vgq_scores_latl_adj <- function(raw.df) {
   # Input :
   # Data frame with at least one column named "participant_id" with the unique
   # IDs for each participant and the columns from the VGQ with the names
@@ -810,14 +810,6 @@ get_vgq_scores_latl_adj <- function(raw.df, raw_values_qualtrics = TRUE) {
     raw.df <- raw.df %>%
       mutate(participant_id = sprintf('ID_%0*' , floor(log10(n())) + 1, row_number()))
   }
-  
-  # Make VGQ column names better for LATL
-  raw.df <- make_vgq_col_names_better_latl(raw.df)
-  
-  # Question hours: 1 / 0 -> Never, {first number is in raw data, second one is recoded}
-  #                   2 / 1 -> 0-1, 3 / 2 -> 1-3, 4 / 3 -> 3-5, 5 / 4 -> 5-10, 6 / 5 -> 10+
-  # Question small screen: 1 -> Yes, 2 -> No
-  # Question touch screen: 1 -> Yes, 2 -> No
   
   vgp_categories.df <- raw.df %>%
     select(participant_id, contains("past.year"))
