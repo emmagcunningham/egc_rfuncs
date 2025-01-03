@@ -760,4 +760,160 @@ indirect.mlm.summary <- function( boot.object ) {
     if (!is.null(call$between.m)&&call$between.m=="T") {cat( paste("Between-subjects Effect of Mediator on Dependent Variable (b path for grand-mean centered average mediator): ", round(t0[ 6], 3), " [", round(boot.ci( boot.object, index= 6, type="perc" )$perc[4], 3), ", " , round(boot.ci( boot.object, index= 6, type="perc" )$perc[5], 3), "]", "\n", sep="") ) }
   })
 }
+
+
+#######
+
+library(glue)
+
+dat_table1 %>% 
+  mutate(`Mean Age (SD) in Years` = glue("{`Age (Years)`} ({`Age SD (Years)`})"),
+         .keep = 'none')
 ################################################################################
+
+make_vgq_col_names_better_latl_adj <- function(raw.df) {
+  col_names <- tolower(names(raw.df))
+  col_names <- case_when(
+    col_names == "vg_shooters_freq" ~ "fps_past.year_hours",
+    col_names == "vg_action_freq" ~ "arpg_past.year_hours",
+    col_names == "vg_sports_freq" ~ "sports_past.year_hours",
+    col_names == "vg_rtstrat_freq" ~ "rts_past.year_hours",
+    col_names == "vg_fantasy_freq" ~ "tbrpg_past.year_hours",
+    col_names == "vg_lifesim_freq" ~ "tbs_past.year_hours",
+    col_names == "vg_music_freq" ~ "music_past.year_hours",
+    col_names == "vg_tm_freq" ~ "tm_past.year_hours",
+    col_names == "vg_other_freq" ~ "other_past.year_hours",
+    col_names == "vg_shooters_freq_p" ~ "fps_before.past.year_hours",
+    col_names == "vg_action_freq_p" ~ "arpg_before.past.year_hours",
+    col_names == "vg_sports_freq_p" ~ "sports_before.past.year_hours",
+    col_names == "vg_rtstrat_freq_p" ~ "rts_before.past.year_hours",
+    col_names == "vg_fantasy_freq_p" ~ "tbrpg_before.past.year_hours",
+    col_names == "vg_lifesim_freq_p" ~ "tbs_before.past.year_hours",
+    col_names == "vg_music_freq_p" ~ "music_before.past.year_hours",
+    col_names == "vg_tm_freq_p" ~ "tm_before.past.year_hours",
+    col_names == "vg_other_freq_p" ~ "other_before.past.year_hours",
+    .default = col_names
+  )
+  names(raw.df) <- col_names
+  
+  return(raw.df)
+}
+
+
+############################################################################
+
+get_vgq_scores_latl_adj <- function(raw.df, raw_values_qualtrics = TRUE) {
+  # Input :
+  # Data frame with at least one column named "participant_id" with the unique
+  # IDs for each participant and the columns from the VGQ with the names
+  # following the pattern from the Qualtrics questionnaire from the Mini-copter
+  # study (from LATL), see here :
+  # https://uwmadison.co1.qualtrics.com/survey-builder/SV_7UGlBut4jMHOb4O/edit
+  #
+  # Example use :
+  # scored.df <- get_vgq_scores(raw.df = raw.df)
+  
+  if(!"participant_id" %in% names(raw.df)) {
+    warning('No participant_id column found. Default ID column added to the dataframe.')
+    raw.df <- raw.df %>%
+      mutate(participant_id = sprintf('ID_%0*' , floor(log10(n())) + 1, row_number()))
+  }
+  
+  # Make VGQ column names better for LATL
+  raw.df <- make_vgq_col_names_better_latl(raw.df)
+  
+  # Question hours: 1 / 0 -> Never, {first number is in raw data, second one is recoded}
+  #                   2 / 1 -> 0-1, 3 / 2 -> 1-3, 4 / 3 -> 3-5, 5 / 4 -> 5-10, 6 / 5 -> 10+
+  # Question small screen: 1 -> Yes, 2 -> No
+  # Question touch screen: 1 -> Yes, 2 -> No
+  
+  vgp_categories.df <- raw.df %>%
+    select(participant_id, contains("past.year"))
+  
+  if(raw_values_qualtrics) {
+    vgp_categories.df <- vgp_categories.df %>%
+      mutate(across(contains("year_hours"), function(x) {as.numeric(x) - 1 }))
+  }
+  
+  vgp_categories.df <- vgp_categories.df %>%
+    mutate(
+      all.genre_past.year_hours =
+        fps_past.year_hours +
+        arpg_past.year_hours +
+        sports_past.year_hours +
+        rts_past.year_hours +
+        tbrpg_past.year_hours +
+        music_past.year_hours +
+        tbs_past.year_hours +
+        tm_past.year_hours +
+        other_past.year_hours,
+      all.genre_before.past.year_hours =
+        fps_before.past.year_hours +
+        arpg_before.past.year_hours +
+        sports_before.past.year_hours +
+        rts_before.past.year_hours +
+        tbrpg_before.past.year_hours +
+        music_before.past.year_hours +
+        tbs_before.past.year_hours +
+        tm_before.past.year_hours + 
+        other_before.past.year_hours) %>%
+    mutate(player_category =
+             ifelse(fps_past.year_hours <= 1 &
+                      arpg_past.year_hours <= 1 &
+                      sports_past.year_hours <= 1 &
+                      rts_past.year_hours <= 1 &
+                      tbrpg_past.year_hours <= 2 &
+                      music_past.year_hours <= 2 &
+                      tbs_past.year_hours <= 2 &
+                      tm_past.year_hours <= 2 &
+                      other_past.year_hours <= 2 &
+                      all.genre_past.year_hours <= 5 &
+                      fps_before.past.year_hours <= 1 &
+                      arpg_before.past.year_hours <= 1 &
+                      sports_before.past.year_hours <= 1 &
+                      rts_before.past.year_hours <= 1 &
+                      tbrpg_before.past.year_hours <= 2 &
+                      music_before.past.year_hours <= 2 &
+                      tbs_before.past.year_hours <= 2 &
+                      tm_before.past.year_hours <= 2 &
+                      other_before.past.year_hours <= 2 &
+                      all.genre_before.past.year_hours <= 5,
+                    "NVGP",
+                    ifelse(((fps_past.year_hours >= 4 |
+                                arpg_past.year_hours >= 4) &
+                               tbrpg_before.past.year_hours <= 2 &
+                               music_before.past.year_hours <= 2 &
+                               tbs_before.past.year_hours <= 2 &
+                               tm_before.past.year_hours <= 2 &
+                               other_before.past.year_hours <= 2) |
+                              ((fps_past.year_hours >= 3 |
+                                   arpg_past.year_hours >= 3) &
+                                  ((fps_before.past.year_hours >= 4 |
+                                      arpg_before.past.year_hours >= 4) |
+                                     sports_past.year_hours >= 4 |
+                                     rts_past.year_hours >= 4) &
+                                  tbs_past.year_hours <= 2 &
+                                  tm_past.year_hours <= 2 &
+                                  music_past.year_hours <= 2 &
+                                  other_past.year_hours <= 2 &
+                                  tbrpg_past.year_hours <= 2),
+                            "AVGP",
+                            ifelse((fps_past.year_hours <= 1 &
+                                      arpg_past.year_hours <= 1 &
+                                      ((sports_past.year_hours <= 2 & rts_past.year_hours <= 1) |
+                                         (sports_past.year_hours <= 1 & rts_past.year_hours <= 2)) &
+                                      fps_before.past.year_hours <= 3 &
+                                      arpg_before.past.year_hours <= 3 &
+                                      sports_before.past.year_hours <= 3 &
+                                      rts_before.past.year_hours <= 3 &
+                                      ((all.genre_past.year_hours >= 2 & all.genre_past.year_hours <= 4) |
+                                         (all.genre_past.year_hours <= 1 & all.genre_before.past.year_hours >= 4)) &
+                                      tbs_past.year_hours <= 3 &
+                                      tm_past.year_hours <= 3 &
+                                      tbrpg_past.year_hours <= 3 &
+                                      music_past.year_hours <= 3 &
+                                      other_past.year_hours <= 3),
+                                   "Low-Tweener", "Tweener"))))
+  
+  return(vgp_categories.df)
+}
